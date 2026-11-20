@@ -15,6 +15,9 @@ playing chess on one iPad mini. See README.md for what it does and how the files
   the tests, builds the site, stamps the version, and force-pushes the result to the `gh-pages`
   branch, which GitHub Pages serves at https://heee.github.io/chest/. Don't commit to `gh-pages`
   by hand; it is rebuilt from scratch on each publish.
+- **One-time Pages setting (owner only).** Claude can't change repository settings or push to
+  `gh-pages` from a session, so the owner switches Pages on once: Settings → Pages → Deploy from a
+  branch → `gh-pages`, `/ (root)`. If the site isn't live, check that setting first.
 - **Ask clarifying questions one at a time** before starting a new feature.
 
 ## Working on it
