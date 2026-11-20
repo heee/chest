@@ -141,3 +141,32 @@ test("diagrams", () => {
   assert.strictEqual(C.diagramFor("q").filter((x) => x === "dot").length, 16);
   assert.strictEqual(C.diagramFor("r").filter((x) => x === "dot").length, 8);
 });
+
+test("draw: not enough pieces to checkmate", () => {
+  const ins = (f) => C.insufficientMaterial(fromFen(f + " w - - 0 1").g.board);
+  assert.ok(ins("4k3/8/8/8/8/8/8/4K3"));                 // K v K
+  assert.ok(ins("4k3/8/8/8/8/8/8/2B1K3"));               // K+B v K
+  assert.ok(ins("4k3/8/8/8/8/8/8/1N2K3"));               // K+N v K
+  assert.ok(ins("2b1k3/8/8/8/8/8/8/2B1K3") === false);    // bishops on opposite colours
+  assert.ok(ins("3bk3/8/8/8/8/8/8/2B1K3"));              // bishops on the same colour
+  assert.ok(!ins("4k3/8/8/8/8/8/8/1NN1K3"));              // two knights: not automatic
+  assert.ok(!ins("4k3/8/8/8/8/8/4P3/4K3"));               // a pawn can still promote
+  assert.ok(!ins("4k3/8/8/8/8/8/8/R3K3"));
+  // Capturing the last piece ends the full game in a draw, but never a lesson.
+  const { g } = fromFen("4k3/8/8/8/8/8/3r4/4K3 w - - 0 1");
+  const { g: g2 } = play(g, true, "e1", "d2");
+  assert.deepStrictEqual(C.outcome(g2, false, true, false), { kind: "material", winner: null });
+});
+
+test("draw: position keys for repetition", () => {
+  let g = { board: C.makeBoard("rnbqkbnr"), castle: { K: true, Q: true, k: true, q: true }, ep: -1 };
+  const start = C.positionKey(g, true);
+  for (const [a, b] of [["g1", "f3"], ["g8", "f6"], ["f3", "g1"], ["f6", "g8"]]) ({ g } = play(g, null, a, b));
+  assert.strictEqual(C.positionKey(g, true), start); // knights out and back: same position
+  // A double pawn step only counts the en passant square when a capture is possible.
+  ({ g } = play(g, true, "e2", "e4"));
+  assert.ok(!/\d+$/.test(C.positionKey(g, false)));
+  // Lost castling rights make it a different position.
+  const noCastle = { board: g.board, castle: { K: false, Q: true, k: true, q: true }, ep: -1 };
+  assert.notStrictEqual(C.positionKey(noCastle, false), C.positionKey({ ...g, ep: -1 }, false));
+});

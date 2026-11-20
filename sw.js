@@ -1,6 +1,7 @@
 /* Offline support: caches the whole app on first load, then serves it from the cache.
-   Bump VERSION whenever any file changes so iPads pick up the new copy. */
-var VERSION = "chess-coach-v1";
+   Do not edit VERSION by hand: the publish workflow replaces "dev" with the commit it publishes,
+   so every release gets a new cache and iPads pick up the new copy automatically. */
+var VERSION = "chess-coach-dev";
 var FILES = [
   "./",
   "index.html",

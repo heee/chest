@@ -206,7 +206,36 @@
       if (inCheck(g.board, sideToMove)) return { kind: "mate", winner: mover };
       return { kind: "stalemate", winner: null };
     }
+    if (lessonFull && insufficientMaterial(g.board)) return { kind: "material", winner: null };
     return null;
+  }
+
+  /* True when neither side can ever checkmate: king against king, a lone bishop or knight against
+     a king, or only bishops left that all stand on squares of one colour. */
+  function insufficientMaterial(b) {
+    var minors = [], bishopColours = {};
+    for (var i = 0; i < 64; i++) {
+      var p = b[i];
+      if (!p || p.t === "k") continue;
+      if (p.t !== "b" && p.t !== "n") return false;
+      minors.push(p.t);
+      if (p.t === "b") bishopColours[(Math.floor(i / 8) + i % 8) % 2] = true;
+    }
+    if (minors.length <= 1) return true;
+    var onlyBishops = minors.every(function (t) { return t === "b"; });
+    return onlyBishops && Object.keys(bishopColours).length === 1;
+  }
+
+  /* Identifies a position for the repetition rule: pieces, side to move, castling rights, and the
+     en passant square only when an en passant capture is actually possible. */
+  function positionKey(g, turn) {
+    var s = "";
+    for (var i = 0; i < 64; i++) { var p = g.board[i]; s += p ? (p.w ? p.t.toUpperCase() : p.t) : "."; }
+    s += turn ? "w" : "b";
+    var c = g.castle;
+    s += c ? (c.K ? "K" : "") + (c.Q ? "Q" : "") + (c.k ? "k" : "") + (c.q ? "q" : "") : "-";
+    if (g.ep >= 0 && allLegal(g, turn).some(function (m) { return m.ep; })) s += g.ep;
+    return s;
   }
 
   /* 5x5 teaching diagram: returns 25 cells, each "", "dot", "ring" or "center". */
@@ -229,7 +258,8 @@
     FILES: FILES, PV: PV, NAMES: NAMES, LESSONS: LESSONS,
     nm: nm, makeBoard: makeBoard, attacks: attacks, isAttacked: isAttacked, kingSq: kingSq,
     inCheck: inCheck, pseudo: pseudo, apply: apply, legal: legal, allLegal: allLegal,
-    bestMove: bestMove, outcome: outcome, diagramFor: diagramFor
+    bestMove: bestMove, outcome: outcome, diagramFor: diagramFor,
+    insufficientMaterial: insufficientMaterial, positionKey: positionKey
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Chess = api;

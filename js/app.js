@@ -92,11 +92,22 @@
     game.turn = next;
     game.last = { from: m.from, to: m.to };
     game.over = C.outcome({ board: n.board, castle: n.castle, ep: n.ep }, next, L.full, n.promo);
+    if (!game.over && L.full && repeatedThreeTimes()) game.over = { kind: "repetition", winner: null };
     ui.sel = -1;
     ui.hint = null;
     clearConfirm();
     save();
     render();
+  }
+
+  /* Draw when the same position (same pieces, same player to move) has come up three times. */
+  function repeatedThreeTimes() {
+    var key = C.positionKey(pos(), game.turn), count = 1;
+    for (var k = game.hist.length - 1; k >= 0 && count < 3; k--) {
+      var h = game.hist[k];
+      if (h.turn === game.turn && C.positionKey(h, h.turn) === key) count++;
+    }
+    return count >= 3;
   }
 
   function undo() {
@@ -247,6 +258,8 @@
     if (o.kind === "promo") return { title: W + " wins!", body: "A pawn made it all the way to the other side." };
     if (o.kind === "wipe") return { title: W + " wins!", body: "Every one of " + Lo + "'s pieces was captured." };
     if (o.kind === "mate") return { title: "Checkmate! " + W + " wins", body: Lo + "'s King is trapped and cannot escape." };
+    if (o.kind === "repetition") return { title: "It's a draw", body: "The same position came up three times, so nobody can win. That's a draw." };
+    if (o.kind === "material") return { title: "It's a draw", body: "Nobody has enough pieces left to checkmate. That's a draw." };
     return { title: "It's a draw", body: nameOf(game.turn) + " has no moves left. In chess this is called stalemate." };
   }
 

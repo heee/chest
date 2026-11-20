@@ -1,3 +1,6 @@
+# Publishes the app to GitHub Pages every time main changes.
+# The built site goes to the gh-pages branch, which Pages serves.
+# It also stamps the offline-cache version in sw.js with the commit, so it never needs bumping by hand.
 name: Publish to GitHub Pages
 
 on:
@@ -6,34 +9,35 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Run engine tests
         run: node --test tests/*.test.js
 
-      - name: Collect the site files
+      - name: Build the site
         run: |
           mkdir _site
           cp -r index.html manifest.webmanifest sw.js css js fonts img icons _site/
+          sed -i "s/chess-coach-dev/chess-coach-${GITHUB_SHA::12}/" _site/sw.js
+          grep -q "chess-coach-${GITHUB_SHA::12}" _site/sw.js
+          touch _site/.nojekyll
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Push to the gh-pages branch
+        working-directory: _site
+        run: |
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publish ${GITHUB_SHA::12}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
